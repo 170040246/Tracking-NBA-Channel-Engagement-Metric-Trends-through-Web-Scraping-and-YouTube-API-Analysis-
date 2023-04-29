@@ -1,0 +1,492 @@
+{
+    "name": "NBA_interaction_analytics",
+    "description": "Data Pipeline Application",
+    "artifact": {
+        "name": "cdap-data-pipeline",
+        "version": "6.8.2",
+        "scope": "SYSTEM"
+    },
+    "config": {
+        "stages": [
+            {
+                "name": "GCSFile",
+                "plugin": {
+                    "name": "GCSFile",
+                    "type": "batchsource",
+                    "label": "GCSFile",
+                    "artifact": {
+                        "name": "google-cloud",
+                        "version": "0.21.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "path": "gs://ytanaltics/nba.csv",
+                        "fileEncoding": "UTF-8",
+                        "useConnection": "true",
+                        "format": "csv",
+                        "enableQuotedValues": "true",
+                        "connection": "${conn(Cloud Storage Default)}",
+                        "skipHeader": "true",
+                        "referenceName": "ytanaltics.nba.csv",
+                        "schema": "{\"type\":\"record\",\"name\":\"text\",\"fields\":[{\"name\":\"Index\",\"type\":\"int\"},{\"name\":\"Title\",\"type\":\"string\"},{\"name\":\"Published_date\",\"type\":\"string\"},{\"name\":\"tag_count\",\"type\":\"string\"},{\"name\":\"Views\",\"type\":\"string\"},{\"name\":\"Likes\",\"type\":\"string\"},{\"name\":\"Comments\",\"type\":\"int\"},{\"name\":\"Month\",\"type\":\"string\"},{\"name\":\"title_length\",\"type\":\"string\"}]}"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"text\",\"fields\":[{\"name\":\"Index\",\"type\":\"int\"},{\"name\":\"Title\",\"type\":\"string\"},{\"name\":\"Published_date\",\"type\":\"string\"},{\"name\":\"tag_count\",\"type\":\"string\"},{\"name\":\"Views\",\"type\":\"string\"},{\"name\":\"Likes\",\"type\":\"string\"},{\"name\":\"Comments\",\"type\":\"int\"},{\"name\":\"Month\",\"type\":\"string\"},{\"name\":\"title_length\",\"type\":\"string\"}]}",
+                "id": "GCSFile",
+                "type": "batchsource",
+                "label": "GCSFile",
+                "icon": "fa-plug",
+                "$$hashKey": "object:5261",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "33px",
+                    "top": "209px"
+                }
+            },
+            {
+                "name": "Wrangler",
+                "plugin": {
+                    "name": "Wrangler",
+                    "type": "transform",
+                    "label": "Wrangler",
+                    "artifact": {
+                        "name": "wrangler-transform",
+                        "version": "4.8.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "directives": "set-type :title_length integer\nset-type :Comments integer\nset-type :Likes integer\nset-type :Views integer\nset-type :tag_count integer",
+                        "field": "*",
+                        "precondition": "false",
+                        "workspaceId": "9020d9bf-429b-45d6-85fe-9eafd9578362",
+                        "schema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}",
+                        "on-error": "send-to-error-port"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}",
+                "inputSchema": [
+                    {
+                        "name": "GCSFile",
+                        "schema": "{\"type\":\"record\",\"name\":\"text\",\"fields\":[{\"name\":\"Index\",\"type\":\"int\"},{\"name\":\"Title\",\"type\":\"string\"},{\"name\":\"Published_date\",\"type\":\"string\"},{\"name\":\"tag_count\",\"type\":\"string\"},{\"name\":\"Views\",\"type\":\"string\"},{\"name\":\"Likes\",\"type\":\"string\"},{\"name\":\"Comments\",\"type\":\"int\"},{\"name\":\"Month\",\"type\":\"string\"},{\"name\":\"title_length\",\"type\":\"string\"}]}"
+                    }
+                ],
+                "id": "Wrangler",
+                "type": "transform",
+                "label": "Wrangler",
+                "icon": "icon-DataPreparation",
+                "$$hashKey": "object:5262",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "433px",
+                    "top": "209px"
+                }
+            },
+            {
+                "name": "Deduplicate",
+                "plugin": {
+                    "name": "Deduplicate",
+                    "type": "batchaggregator",
+                    "label": "Deduplicate",
+                    "artifact": {
+                        "name": "core-plugins",
+                        "version": "2.10.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "uniqueFields": "Index,Title",
+                        "filterOperation": "Title:Any"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"record.typededup\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}",
+                "inputSchema": [
+                    {
+                        "name": "Wrangler",
+                        "schema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}"
+                    }
+                ],
+                "id": "Deduplicate",
+                "type": "batchaggregator",
+                "label": "Deduplicate",
+                "icon": "icon-deduplicator",
+                "$$hashKey": "object:5263",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "833px",
+                    "top": "-170px"
+                }
+            },
+            {
+                "name": "BigQuery",
+                "plugin": {
+                    "name": "BigQueryTable",
+                    "type": "batchsink",
+                    "label": "BigQuery",
+                    "artifact": {
+                        "name": "google-cloud",
+                        "version": "0.21.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "useConnection": "true",
+                        "connection": "${conn(BigQuery Default)}",
+                        "dataset": "nba_dataset",
+                        "table": "nba_deduplicated",
+                        "operation": "insert",
+                        "truncateTable": "false",
+                        "allowSchemaRelaxation": "false",
+                        "location": "US",
+                        "createPartitionedTable": "false",
+                        "partitioningType": "TIME",
+                        "partitionFilterRequired": "false",
+                        "schema": "{\"type\":\"record\",\"name\":\"record.typededup\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"record.typededup\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}",
+                "inputSchema": [
+                    {
+                        "name": "Deduplicate",
+                        "schema": "{\"type\":\"record\",\"name\":\"record.typededup\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}"
+                    }
+                ],
+                "id": "BigQuery",
+                "type": "batchsink",
+                "label": "BigQuery",
+                "icon": "fa-plug",
+                "$$hashKey": "object:5264",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "1133px",
+                    "top": "-170px"
+                }
+            },
+            {
+                "name": "Distinct",
+                "plugin": {
+                    "name": "Distinct",
+                    "type": "batchaggregator",
+                    "label": "Distinct",
+                    "artifact": {
+                        "name": "core-plugins",
+                        "version": "2.10.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "fields": "Month,Comments,Likes,Views,tag_count,Published_date"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"record.typedistinct\",\"fields\":[{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]}]}",
+                "inputSchema": [
+                    {
+                        "name": "Wrangler",
+                        "schema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}"
+                    }
+                ],
+                "id": "Distinct",
+                "type": "batchaggregator",
+                "label": "Distinct",
+                "icon": "icon-distinct",
+                "$$hashKey": "object:5265",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "833px",
+                    "top": "19px"
+                }
+            },
+            {
+                "name": "BigQuery2",
+                "plugin": {
+                    "name": "BigQueryTable",
+                    "type": "batchsink",
+                    "label": "BigQuery2",
+                    "artifact": {
+                        "name": "google-cloud",
+                        "version": "0.21.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "useConnection": "true",
+                        "dataset": "nba_dataset",
+                        "table": "nba_distinct",
+                        "operation": "insert",
+                        "truncateTable": "false",
+                        "allowSchemaRelaxation": "false",
+                        "location": "US",
+                        "createPartitionedTable": "false",
+                        "partitioningType": "TIME",
+                        "partitionFilterRequired": "false",
+                        "schema": "{\"type\":\"record\",\"name\":\"record.typedistinct\",\"fields\":[{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]}]}",
+                        "connection": "${conn(BigQuery Default)}"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"record.typedistinct\",\"fields\":[{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]}]}",
+                "inputSchema": [
+                    {
+                        "name": "Distinct",
+                        "schema": "{\"type\":\"record\",\"name\":\"record.typedistinct\",\"fields\":[{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]}]}"
+                    }
+                ],
+                "id": "BigQuery2",
+                "type": "batchsink",
+                "label": "BigQuery2",
+                "icon": "fa-plug",
+                "$$hashKey": "object:5266",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "1133px",
+                    "top": "19px"
+                }
+            },
+            {
+                "name": "Group By",
+                "plugin": {
+                    "name": "GroupByAggregate",
+                    "type": "batchaggregator",
+                    "label": "Group By",
+                    "artifact": {
+                        "name": "core-plugins",
+                        "version": "2.10.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "groupByFields": "Title,Published_date,tag_count,Views,Likes,Comments,Month,title_length",
+                        "aggregates": "tag_count_avg:Avg(tag_count),max_likes:Max(Likes),min_views:Min(Views),max_views:Max(Views),Degree_of_variation_and_dispersion:CollectSet(Month),avg_comment_count:Avg(Comments)"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"record.typeagg\",\"fields\":[{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]},{\"name\":\"tag_count_avg\",\"type\":[\"double\",\"null\"]},{\"name\":\"max_likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"min_views\",\"type\":[\"int\",\"null\"]},{\"name\":\"max_views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Degree_of_variation_and_dispersion\",\"type\":{\"type\":\"array\",\"items\":[\"string\",\"null\"]}},{\"name\":\"avg_comment_count\",\"type\":[\"double\",\"null\"]}]}",
+                "inputSchema": [
+                    {
+                        "name": "Wrangler",
+                        "schema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}"
+                    }
+                ],
+                "id": "Group-By",
+                "type": "batchaggregator",
+                "label": "Group By",
+                "icon": "icon-groupbyaggregate",
+                "$$hashKey": "object:5267",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "833px",
+                    "top": "209px"
+                }
+            },
+            {
+                "name": "BigQuery3",
+                "plugin": {
+                    "name": "BigQueryTable",
+                    "type": "batchsink",
+                    "label": "BigQuery3",
+                    "artifact": {
+                        "name": "google-cloud",
+                        "version": "0.21.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "useConnection": "true",
+                        "connection": "${conn(BigQuery Default)}",
+                        "dataset": "nba_dataset",
+                        "table": "grouped",
+                        "operation": "insert",
+                        "truncateTable": "false",
+                        "allowSchemaRelaxation": "false",
+                        "location": "US",
+                        "createPartitionedTable": "false",
+                        "partitioningType": "TIME",
+                        "partitionFilterRequired": "false",
+                        "schema": "{\"type\":\"record\",\"name\":\"record.typeagg\",\"fields\":[{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]},{\"name\":\"tag_count_avg\",\"type\":[\"double\",\"null\"]},{\"name\":\"max_likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"min_views\",\"type\":[\"int\",\"null\"]},{\"name\":\"max_views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Degree_of_variation_and_dispersion\",\"type\":{\"type\":\"array\",\"items\":[\"string\",\"null\"]}},{\"name\":\"avg_comment_count\",\"type\":[\"double\",\"null\"]}]}"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"record.typeagg\",\"fields\":[{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]},{\"name\":\"tag_count_avg\",\"type\":[\"double\",\"null\"]},{\"name\":\"max_likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"min_views\",\"type\":[\"int\",\"null\"]},{\"name\":\"max_views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Degree_of_variation_and_dispersion\",\"type\":{\"type\":\"array\",\"items\":[\"string\",\"null\"]}},{\"name\":\"avg_comment_count\",\"type\":[\"double\",\"null\"]}]}",
+                "inputSchema": [
+                    {
+                        "name": "Group By",
+                        "schema": "{\"type\":\"record\",\"name\":\"record.typeagg\",\"fields\":[{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]},{\"name\":\"tag_count_avg\",\"type\":[\"double\",\"null\"]},{\"name\":\"max_likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"min_views\",\"type\":[\"int\",\"null\"]},{\"name\":\"max_views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Degree_of_variation_and_dispersion\",\"type\":{\"type\":\"array\",\"items\":[\"string\",\"null\"]}},{\"name\":\"avg_comment_count\",\"type\":[\"double\",\"null\"]}]}"
+                    }
+                ],
+                "id": "BigQuery3",
+                "type": "batchsink",
+                "label": "BigQuery3",
+                "icon": "fa-plug",
+                "$$hashKey": "object:5268",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "1133px",
+                    "top": "209px"
+                }
+            },
+            {
+                "name": "ErrorCollector",
+                "plugin": {
+                    "name": "ErrorCollector",
+                    "type": "errortransform",
+                    "label": "ErrorCollector",
+                    "artifact": {
+                        "name": "core-plugins",
+                        "version": "2.10.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "messageField": "msg",
+                        "codeField": "code",
+                        "stageField": "node"
+                    }
+                },
+                "id": "ErrorCollector",
+                "type": "errortransform",
+                "label": "ErrorCollector",
+                "icon": "fa-exclamation-triangle",
+                "$$hashKey": "object:5269",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "683px",
+                    "top": "589px"
+                }
+            },
+            {
+                "name": "GCS2",
+                "plugin": {
+                    "name": "GCS",
+                    "type": "batchsink",
+                    "label": "GCS2",
+                    "artifact": {
+                        "name": "google-cloud",
+                        "version": "0.21.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "useConnection": "true",
+                        "referenceName": "Wrangler_error_reports",
+                        "path": "gs://ytanaltics/",
+                        "suffix": "yyyy-MM-dd-HH-mm",
+                        "format": "json",
+                        "location": "us",
+                        "contentType": "application/octet-stream",
+                        "schema": "{\"type\":\"record\",\"name\":\"text\",\"fields\":[{\"name\":\"body\",\"type\":\"string\"}]}",
+                        "connection": "${conn(Cloud Storage Default)}"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"text\",\"fields\":[{\"name\":\"body\",\"type\":\"string\"}]}",
+                "inputSchema": [
+                    {
+                        "name": "ErrorCollector",
+                        "schema": ""
+                    }
+                ],
+                "id": "GCS2",
+                "type": "batchsink",
+                "label": "GCS2",
+                "icon": "fa-plug",
+                "$$hashKey": "object:5270",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "1133px",
+                    "top": "589px"
+                }
+            },
+            {
+                "name": "BigQuery4",
+                "plugin": {
+                    "name": "BigQueryTable",
+                    "type": "batchsink",
+                    "label": "BigQuery4",
+                    "artifact": {
+                        "name": "google-cloud",
+                        "version": "0.21.1",
+                        "scope": "SYSTEM"
+                    },
+                    "properties": {
+                        "useConnection": "true",
+                        "connection": "${conn(BigQuery Default)}",
+                        "dataset": "nba_dataset",
+                        "table": "wrangled_data",
+                        "operation": "insert",
+                        "truncateTable": "false",
+                        "allowSchemaRelaxation": "false",
+                        "location": "US",
+                        "createPartitionedTable": "false",
+                        "partitioningType": "TIME",
+                        "partitionFilterRequired": "false",
+                        "schema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}"
+                    }
+                },
+                "outputSchema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}",
+                "inputSchema": [
+                    {
+                        "name": "Wrangler",
+                        "schema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"Index\",\"type\":[\"int\",\"null\"]},{\"name\":\"Title\",\"type\":[\"string\",\"null\"]},{\"name\":\"Published_date\",\"type\":[\"string\",\"null\"]},{\"name\":\"tag_count\",\"type\":[\"int\",\"null\"]},{\"name\":\"Views\",\"type\":[\"int\",\"null\"]},{\"name\":\"Likes\",\"type\":[\"int\",\"null\"]},{\"name\":\"Comments\",\"type\":[\"int\",\"null\"]},{\"name\":\"Month\",\"type\":[\"string\",\"null\"]},{\"name\":\"title_length\",\"type\":[\"int\",\"null\"]}]}"
+                    }
+                ],
+                "id": "BigQuery4",
+                "type": "batchsink",
+                "label": "BigQuery4",
+                "icon": "fa-plug",
+                "$$hashKey": "object:5271",
+                "isPluginAvailable": true,
+                "_uiPosition": {
+                    "left": "833px",
+                    "top": "399px"
+                }
+            }
+        ],
+        "connections": [
+            {
+                "from": "GCSFile",
+                "to": "Wrangler"
+            },
+            {
+                "from": "Wrangler",
+                "to": "Deduplicate"
+            },
+            {
+                "from": "Deduplicate",
+                "to": "BigQuery"
+            },
+            {
+                "from": "Wrangler",
+                "to": "Distinct"
+            },
+            {
+                "from": "Distinct",
+                "to": "BigQuery2"
+            },
+            {
+                "from": "Wrangler",
+                "to": "Group By"
+            },
+            {
+                "from": "Group By",
+                "to": "BigQuery3"
+            },
+            {
+                "from": "ErrorCollector",
+                "to": "GCS2"
+            },
+            {
+                "from": "Wrangler",
+                "to": "BigQuery4"
+            },
+            {
+                "from": "Wrangler",
+                "to": "ErrorCollector"
+            }
+        ],
+        "resources": {
+            "memoryMB": 2048,
+            "virtualCores": 1
+        },
+        "driverResources": {
+            "memoryMB": 2048,
+            "virtualCores": 1
+        },
+        "postActions": [],
+        "properties": {},
+        "processTimingEnabled": true,
+        "stageLoggingEnabled": true,
+        "description": "Data Pipeline Application",
+        "engine": "spark",
+        "schedule": "0 1 */1 * *",
+        "maxConcurrentRuns": 1,
+        "pushdownEnabled": false
+    },
+    "version": "-SNAPSHOT"
+}
